@@ -13,6 +13,8 @@ Live: https://naisblommaert-png.github.io/meridian/
 - `index.html`: de pagina
 - `style.css`: opmaak
 - `main.js`: kleine animaties, toegankelijkheidsmenu, MailerLite-controle
+- `fles3d.js`: het 3D-flesje bij Over ons (three.js); `fles3d.bundle.js` is dezelfde code gebundeld met three.js r170 (esbuild), zodat de pagina ook lokaal werkt
+- `vendor/`: RoomEnvironment en de licentie van three.js (MIT)
 - `img/`: beelden (WebP), logo en favicon
 
 Geen build-stap: GitHub Pages toont de bestanden rechtstreeks (branch `main`, map `/`).
@@ -23,4 +25,4 @@ Zet `meridian.mp4` in `img/` en vervang in de sectie `sfeer` de `<img>` door:
 Voorzie dan ook een pauzeknop (WCAG 2.2.2).
 
 ## AI-transparantie
-Gebouwd met Claude (Claude Code). Teksten en beelden deels gemaakt met AI (Claude, Adobe Firefly). Sfeerfoto's via Pexels (Gustavo Fring, Hatice Baran, Mikhail Nilov).
+Gebouwd met Claude (Claude Code). Teksten en beelden deels gemaakt met AI (Claude, Adobe Firefly). Sfeerfoto's via Pexels (Gustavo Fring, Mikhail Nilov). 3D met three.js (MIT).

@@ -80,3 +80,22 @@
   paneel.querySelector('.a11y-reset').addEventListener('click', function () { staat = { tekst: 100, opties: {} }; toepassen(); });
   toepassen();
 })();
+
+//// Momentknoppen zonder WebGL: wissel de foto en de lucht (het 3D-script doet de rest als WebGL werkt)
+(function () {
+  var LUCHT = { iris: ['#BEE2F4', '#E9E1F4'], sage: ['#FBF9F4', '#E1F1EA'], amber: ['#FFD9C4', '#FFB48F'], noir: ['#E9E1F4', '#8E79B5'] };
+  var houder = document.querySelector('.fles3d');
+  if (!houder) return;
+  var foto = houder.querySelector('.fles3d-fallback');
+  document.querySelectorAll('[data-moment]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var g = b.getAttribute('data-moment');
+      document.querySelectorAll('[data-moment]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      if (houder.classList.contains('actief')) return;
+      foto.src = 'img/fles-' + g + '.webp';
+      foto.alt = 'Meridian ' + g.charAt(0).toUpperCase() + g.slice(1);
+      houder.style.setProperty('--lucht1', LUCHT[g][0]);
+      houder.style.setProperty('--lucht2', LUCHT[g][1]);
+    });
+  });
+})();

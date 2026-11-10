@@ -175,12 +175,25 @@ ml('account', '2760245');
 <!-- 7 OVER ONS -->
 <section class="over" id="over-ons">
   <div class="wrap over-grid">
-    <figure class="reveal"><img src="img/trio.webp" alt="Meridian Amber, Iris en Sage op een lila achtergrond" loading="lazy" width="1200" height="640"></figure>
+    <div class="hero-3d reveal">
+      <div class="fles3d">
+        <img class="fles3d-fallback" src="img/fles-iris.webp" alt="Meridian Iris" loading="lazy" width="517" height="800">
+        <canvas tabindex="0" role="img" aria-label="3D-flesje Meridian Iris. Sleep of gebruik de pijltjestoetsen om het te draaien."></canvas>
+      </div>
+      <div class="momenten" role="group" aria-label="Kies een geur">
+        <button type="button" data-moment="iris" aria-pressed="true"><b>Iris</b> 06:40</button>
+        <button type="button" data-moment="sage" aria-pressed="false"><b>Sage</b> 12:30</button>
+        <button type="button" data-moment="amber" aria-pressed="false"><b>Amber</b> 16:00</button>
+        <button type="button" data-moment="noir" aria-pressed="false"><b>Noir</b> 21:15</button>
+      </div>
+      <p class="draai-hint">Sleep om het flesje te draaien.</p>
+    </div>
     <div class="over-txt reveal">
       <p class="label">Over ons</p>
       <h2>Gemaakt voor onderweg.</h2>
       <p>Meridian maakt frisse, ongecompliceerde colognes voor reizende professionals. Eén geur die overal werkt en in je handbagage past.</p>
       <p>Zo heb je onderweg één ding minder om aan te denken.</p>
+      <p>Kies een geur en draai het flesje rond.</p>
       <a class="btn" href="#inschrijven">Kies je geur</a>
     </div>
   </div>
@@ -207,7 +220,7 @@ ml('account', '2760245');
       <div>
         <h2 class="f-kop">Over deze site</h2>
         <p>Meridian is een fictief merk, gemaakt voor een schoolproject Content Automation (2026).</p>
-        <p>Teksten en beelden deels gemaakt met AI (Claude, Adobe Firefly). Sfeerfoto's via Pexels: Gustavo Fring, Hatice Baran, Mikhail Nilov.</p>
+        <p>Teksten en beelden deels gemaakt met AI (Claude, Adobe Firefly). Sfeerfoto's via Pexels: Gustavo Fring, Mikhail Nilov. 3D met three.js (MIT).</p>
       </div>
     </div>
     <p class="footer-bottom">© 2026 Meridian · schoolproject</p>
@@ -237,5 +250,7 @@ ml('account', '2760245');
 </div>
 
 <script src="main.js"></script>
+<!-- 3D-flesje: fles3d.js (bron) gebundeld met three.js tot fles3d.bundle.js, zodat het ook lokaal (dubbelklik) werkt -->
+<script src="fles3d.bundle.js"></script>
 </body>
 </html>

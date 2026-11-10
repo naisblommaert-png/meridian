@@ -118,6 +118,8 @@
       var W = sr.width, H = 200, m = H / 2;
       var x1 = lr.left - sr.left - 12, x2 = lr.right - sr.left + 14;
       var y = lr.top - sr.top + lr.height / 2;
+      var rev = it.lab.closest('.reveal'); // schuift het label nog in? reken die verschuiving eruit
+      if (rev) { var t = getComputedStyle(rev).transform; if (t && t !== 'none') { var mt = t.match(/matrix(3d)?\(([^)]+)\)/); if (mt) { var v = mt[2].split(','); y -= parseFloat(v[mt[1] ? 13 : 5]) || 0; } } }
       var a = it.omgekeerd ? m + 70 : m - 70, b = it.omgekeerd ? m - 60 : m + 60; // in en uit de lijn, afwisselend boven/onder
       it.svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
       it.svg.style.top = (y - m) + 'px'; it.svg.style.width = W + 'px'; it.svg.style.height = H + 'px';
@@ -128,9 +130,14 @@
       it.path.style.strokeDasharray = len; if (!it.svg.classList.contains('getekend')) it.path.style.strokeDashoffset = len;
     });
   }
+  var wacht = false;
+  function later() { if (wacht) return; wacht = true; requestAnimationFrame(function () { wacht = false; teken(); }); }
   teken();
-  window.addEventListener('resize', teken);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(teken);
+  window.addEventListener('resize', later);
+  // opnieuw meten als een sectie van hoogte verandert (bv. het MailerLite-formulier laadt) of een blok klaar is met inschuiven
+  if ('ResizeObserver' in window) { var ro = new ResizeObserver(later); items.forEach(function (it) { ro.observe(it.sec); ro.observe(it.lab); }); }
+  document.addEventListener('transitionend', function (e) { if (e.target.classList && e.target.classList.contains('reveal')) later(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(later);
   if ('IntersectionObserver' in window) {
     var io = new IntersectionObserver(function (es) {
       es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('getekend'); e.target.querySelector('path').style.strokeDashoffset = 0; io.unobserve(e.target); } });

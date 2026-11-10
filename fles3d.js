@@ -22,55 +22,96 @@ function webglOk() {
 if (houder && canvas && webglOk()) start();
 
 function start() {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
+  renderer.toneMappingExposure = 0.95;
   const scene = new THREE.Scene();
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environmentIntensity = 0.75;
 
   const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
   camera.position.set(0, 0.35, 6.2);
 
-  const licht = new THREE.DirectionalLight(0xffe2cf, 2.2); // warme zon rechtsboven
+  const licht = new THREE.DirectionalLight(0xffe2cf, 2.4); // warme zon rechtsboven
   licht.position.set(3, 4, 3); scene.add(licht);
-  scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+  const rand = new THREE.DirectionalLight(0xd9ccff, 1.4); // koel randlicht links achter
+  rand.position.set(-4, 2, -3); scene.add(rand);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.25));
+
+  // lucht als achtergrond in de 3D-scène, zodat het glas ze echt kan breken
+  const luchtCanvas = document.createElement('canvas'); luchtCanvas.width = 512; luchtCanvas.height = 512;
+  const luchtTex = new THREE.CanvasTexture(luchtCanvas); luchtTex.colorSpace = THREE.SRGBColorSpace;
+  function tekenLucht(c1, c2) {
+    const g = luchtCanvas.getContext('2d');
+    const lin = g.createLinearGradient(0, 0, 0, 512); lin.addColorStop(0, c1); lin.addColorStop(1, c2);
+    g.fillStyle = lin; g.fillRect(0, 0, 512, 512);
+    const zon = g.createRadialGradient(400, 60, 0, 400, 60, 230); zon.addColorStop(0, 'rgba(255,180,143,.75)'); zon.addColorStop(1, 'rgba(255,180,143,0)');
+    g.fillStyle = zon; g.fillRect(0, 0, 512, 512);
+    luchtTex.needsUpdate = true;
+  }
+  scene.background = luchtTex;
 
   const fles = new THREE.Group(); fles.position.y = -0.1; scene.add(fles);
 
-  // vorm van het flesje: trapezium, onderaan breder (zoals op de productfoto's)
-  function trapezium(onder, boven, hoogte) {
+  // vorm van het flesje: trapezium, onderaan breder, met afgeronde randen (zoals op de productfoto's)
+  function trapezium(onder, boven, hoogte, r) {
     const s = new THREE.Shape();
-    s.moveTo(-onder / 2, 0); s.lineTo(onder / 2, 0); s.lineTo(boven / 2, hoogte); s.lineTo(-boven / 2, hoogte); s.closePath();
+    const hk = (x0, y0, x1, y1, x2, y2) => { s.lineTo(x0, y0); s.quadraticCurveTo(x1, y1, x2, y2); };
+    const d = r || 0.0001;
+    s.moveTo(-onder / 2 + d, 0);
+    hk(onder / 2 - d, 0, onder / 2, 0, onder / 2 - d * 0.3, d);
+    hk(boven / 2 + d * 0.3, hoogte - d, boven / 2, hoogte, boven / 2 - d, hoogte);
+    hk(-boven / 2 + d, hoogte, -boven / 2, hoogte, -boven / 2 - d * 0.3, hoogte - d);
+    hk(-onder / 2 + d * 0.3, d, -onder / 2, 0, -onder / 2 + d, 0);
     return s;
   }
-  const diepte = 0.62;
-  const glasGeo = new THREE.ExtrudeGeometry(trapezium(1.32, 0.78, 1.9), { depth: diepte, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.06, bevelSegments: 4 });
+  const diepte = 0.66, H = 1.9, ONDER = 1.32, BOVEN = 0.8;
+  const glasGeo = new THREE.ExtrudeGeometry(trapezium(ONDER, BOVEN, H, 0.06), { depth: diepte, curveSegments: 10, bevelEnabled: true, bevelThickness: 0.07, bevelSize: 0.06, bevelSegments: 8 });
   glasGeo.translate(0, -1.05, -diepte / 2);
-  const glas = new THREE.Mesh(glasGeo, new THREE.MeshPhysicalMaterial({
-    color: 0xffffff, metalness: 0, roughness: 0.02, transmission: 1, thickness: 0.25, ior: 1.45, attenuationColor: 0xffffff,
-    clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 1.2, transparent: true,
-  }));
-  fles.add(glas);
+  const glasMat = new THREE.MeshPhysicalMaterial({
+    color: 0xffffff, metalness: 0, roughness: 0, transmission: 1, thickness: 0.9, ior: 1.5,
+    specularIntensity: 0.8, clearcoat: 1, clearcoatRoughness: 0.03, dispersion: 0.15,
+    attenuationColor: 0xeef0ff, attenuationDistance: 3, envMapIntensity: 0.7,
+  });
+  fles.add(new THREE.Mesh(glasGeo, glasMat));
 
-  const vloeistofGeo = new THREE.ExtrudeGeometry(trapezium(1.16, 0.74, 1.55), { depth: diepte - 0.14, bevelEnabled: false });
-  vloeistofGeo.translate(0, -0.97, -(diepte - 0.14) / 2);
-  const vloeistofMat = new THREE.MeshPhysicalMaterial({ color: GEUREN.iris.vloeistof, roughness: 0.2, metalness: 0, clearcoat: 0.6, sheen: 0.3, envMapIntensity: 0.8 });
+  // vloeistof: dikke glazen bodem eronder, vulniveau net onder de schouder
+  const bodem = 0.26, vul = 1.38;
+  const vOnder = ONDER - 0.24, vBoven = (ONDER - (ONDER - BOVEN) * ((bodem + vul) / H)) - 0.24;
+  const vloeistofGeo = new THREE.ExtrudeGeometry(trapezium(vOnder - (ONDER - BOVEN) * (bodem / H), vBoven, vul, 0.04), { depth: diepte - 0.2, curveSegments: 8, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 3 });
+  vloeistofGeo.translate(0, -1.05 + bodem, -(diepte - 0.2) / 2);
+  const vloeistofMat = new THREE.MeshPhysicalMaterial({ color: GEUREN.iris.vloeistof, roughness: 0.08, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 0.9 });
   fles.add(new THREE.Mesh(vloeistofGeo, vloeistofMat));
 
-  const hals = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, 0.16, 32), new THREE.MeshPhysicalMaterial({ color: 0xdddddd, metalness: 0.9, roughness: 0.25 }));
-  hals.position.y = 0.98; fles.add(hals);
-  const dop = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.62, 48), new THREE.MeshPhysicalMaterial({ color: 0x111014, roughness: 0.18, clearcoat: 1, clearcoatRoughness: 0.08 }));
-  dop.position.y = 1.36; fles.add(dop);
+  // spraybuisje in de vloeistof
+  const buis = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 1.55, 12), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, transparent: true, opacity: 0.45 }));
+  buis.position.set(0, -0.08, 0); fles.add(buis);
+
+  // metalen hals (krimpring) en dop met afgeronde bovenrand
+  const metaal = new THREE.MeshPhysicalMaterial({ color: 0xd8d8dc, metalness: 1, roughness: 0.18, envMapIntensity: 1.3 });
+  const hals = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.19, 0.14, 48), metaal);
+  hals.position.y = 0.97; fles.add(hals);
+  const kraag = new THREE.Mesh(new THREE.TorusGeometry(0.185, 0.018, 12, 48), metaal);
+  kraag.rotation.x = Math.PI / 2; kraag.position.y = 0.91; fles.add(kraag);
+  const dopProfiel = [];
+  const R = 0.27, DH = 0.64, rr = 0.05;
+  dopProfiel.push(new THREE.Vector2(0, 0), new THREE.Vector2(R - 0.01, 0), new THREE.Vector2(R, 0.01), new THREE.Vector2(R, DH - rr));
+  for (let i = 1; i <= 8; i++) { const h = (i / 8) * Math.PI / 2; dopProfiel.push(new THREE.Vector2(R - rr + Math.cos(h) * rr, DH - rr + Math.sin(h) * rr)); }
+  dopProfiel.push(new THREE.Vector2(0, DH));
+  const dop = new THREE.Mesh(new THREE.LatheGeometry(dopProfiel, 64), new THREE.MeshPhysicalMaterial({ color: 0x0d0c10, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: 1.2 }));
+  dop.position.y = 1.04; fles.add(dop);
 
   // etiket: canvas-textuur in de huisstijl (MERIDIAN, korte lijn, geurnaam)
-  const etiketCanvas = document.createElement('canvas'); etiketCanvas.width = 512; etiketCanvas.height = 600;
-  const etiketTex = new THREE.CanvasTexture(etiketCanvas); etiketTex.colorSpace = THREE.SRGBColorSpace; etiketTex.anisotropy = 4;
+  const etiketCanvas = document.createElement('canvas'); etiketCanvas.width = 512; etiketCanvas.height = 600; // tekenen op 2x voor scherpte
+  const etiketTex = new THREE.CanvasTexture(etiketCanvas); etiketTex.colorSpace = THREE.SRGBColorSpace; etiketTex.anisotropy = 8; etiketTex.generateMipmaps = true;
   function tekenEtiket(geur) {
     const g = etiketCanvas.getContext('2d');
-    g.fillStyle = '#ffffff'; g.fillRect(0, 0, 512, 600);
+    g.fillStyle = '#fbfaf7'; g.fillRect(0, 0, 512, 600);
+    for (let i = 0; i < 2500; i++) { g.fillStyle = 'rgba(39,29,53,' + (Math.random() * 0.025) + ')'; g.fillRect(Math.random() * 512, Math.random() * 600, 1.5, 1.5); }
     g.fillStyle = '#271D35'; g.textAlign = 'center';
     g.font = '500 64px "Space Grotesk", sans-serif';
     if ('letterSpacing' in g) g.letterSpacing = '18px';
@@ -81,8 +122,8 @@ function start() {
     g.fillText(GEUREN[geur].naam, 261, 372);
     etiketTex.needsUpdate = true;
   }
-  const etiket = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.72), new THREE.MeshBasicMaterial({ map: etiketTex, toneMapped: false }));
-  etiket.position.set(0, 0.0, diepte / 2 + 0.075); fles.add(etiket);
+  const etiket = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.66), new THREE.MeshStandardMaterial({ map: etiketTex, roughness: 0.9, emissive: 0xffffff, emissiveMap: etiketTex, emissiveIntensity: 0.55 }));
+  etiket.position.set(0, 0.02, diepte / 2 + 0.072); fles.add(etiket);
 
   // meridiaanring
   const ring = new THREE.Mesh(new THREE.TorusGeometry(1.75, 0.012, 12, 180), new THREE.MeshBasicMaterial({ color: 0x7453A2 }));
@@ -105,6 +146,7 @@ function start() {
     tekenEtiket(geur);
     houder.style.setProperty('--lucht1', GEUREN[geur].lucht[0]);
     houder.style.setProperty('--lucht2', GEUREN[geur].lucht[1]);
+    tekenLucht(GEUREN[geur].lucht[0], GEUREN[geur].lucht[1]);
     canvas.setAttribute('aria-label', '3D-flesje Meridian ' + geur.charAt(0).toUpperCase() + geur.slice(1) + '. Sleep of gebruik de pijltjestoetsen om het te draaien.');
     vraagFrame();
   }

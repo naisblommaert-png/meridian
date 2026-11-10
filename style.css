@@ -256,3 +256,13 @@ html.a-contrast .fles3d{background:#fff;border:2px solid #000}
 html.a-contrast .momenten{border:2px solid #000;box-shadow:none}
 html.a-contrast .momenten button[aria-pressed="true"]{background:#2a1450}
 .hero-3d:not(:has(.fles3d.actief)) .draai-hint{display:none}
+
+/* meridiaanlijnen bij de sectiekoppen */
+.met-lijn{position:relative}
+.kop-lijn{position:absolute;left:0;pointer-events:none;z-index:0;overflow:visible}
+.kop-lijn path{fill:none;stroke:var(--paars);stroke-width:2;opacity:.7;transition:stroke-dashoffset 2.2s cubic-bezier(.3,.6,.2,1)}
+.inschrijven .kop-lijn path{stroke:var(--perzik);opacity:.85}
+.label-lijn::before,.statement .label-lijn::after{display:none}
+.met-lijn > :not(.kop-lijn){position:relative;z-index:1}
+html.a-stil .kop-lijn path{transition:none;stroke-dashoffset:0!important}
+@media (prefers-reduced-motion:reduce){.kop-lijn path{stroke-dashoffset:0!important}}

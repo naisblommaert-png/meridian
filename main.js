@@ -99,3 +99,42 @@
     });
   });
 })();
+
+// Meridiaanlijnen bij de sectiekoppen: een golvende lijn door de witruimte, zoals in de hero
+(function () {
+  var NS = 'http://www.w3.org/2000/svg';
+  var labels = Array.prototype.filter.call(document.querySelectorAll('main section .label'), function (l) { return !l.closest('.hero'); });
+  if (!labels.length) return;
+  var items = labels.map(function (lab, i) {
+    var sec = lab.closest('section');
+    sec.classList.add('met-lijn'); lab.classList.add('label-lijn');
+    var svg = document.createElementNS(NS, 'svg'); svg.setAttribute('class', 'kop-lijn'); svg.setAttribute('aria-hidden', 'true'); svg.setAttribute('focusable', 'false');
+    var path = document.createElementNS(NS, 'path'); svg.appendChild(path); sec.insertBefore(svg, sec.firstChild);
+    return { lab: lab, sec: sec, svg: svg, path: path, omgekeerd: i % 2 === 1 };
+  });
+  function teken() {
+    items.forEach(function (it) {
+      var sr = it.sec.getBoundingClientRect(), rg = document.createRange(); rg.selectNodeContents(it.lab); var lr = rg.getBoundingClientRect();
+      var W = sr.width, H = 200, m = H / 2;
+      var x1 = lr.left - sr.left - 12, x2 = lr.right - sr.left + 14;
+      var y = lr.top - sr.top + lr.height / 2;
+      var a = it.omgekeerd ? m + 70 : m - 70, b = it.omgekeerd ? m - 60 : m + 60; // in en uit de lijn, afwisselend boven/onder
+      it.svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      it.svg.style.top = (y - m) + 'px'; it.svg.style.width = W + 'px'; it.svg.style.height = H + 'px';
+      var d = x1 > 60 ? 'M -4 ' + a + ' C ' + (x1 * 0.45) + ' ' + a + ', ' + (x1 * 0.6) + ' ' + m + ', ' + x1 + ' ' + m : '';
+      if (x2 < W - 40) d += (d ? ' ' : '') + 'M ' + x2 + ' ' + m + ' C ' + (x2 + (W - x2) * 0.4) + ' ' + m + ', ' + (W - (W - x2) * 0.35) + ' ' + b + ', ' + (W + 4) + ' ' + b;
+      it.path.setAttribute('d', d);
+      var len = it.path.getTotalLength();
+      it.path.style.strokeDasharray = len; if (!it.svg.classList.contains('getekend')) it.path.style.strokeDashoffset = len;
+    });
+  }
+  teken();
+  window.addEventListener('resize', teken);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(teken);
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('getekend'); e.target.querySelector('path').style.strokeDashoffset = 0; io.unobserve(e.target); } });
+    }, { threshold: 0.4 });
+    items.forEach(function (it) { io.observe(it.svg); });
+  } else { items.forEach(function (it) { it.svg.classList.add('getekend'); it.path.style.strokeDashoffset = 0; }); }
+})();
